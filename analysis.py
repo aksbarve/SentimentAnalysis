@@ -86,6 +86,64 @@ time_len.plot(figsize=(16, 4), label="Length", color='r', legend=True)
 time_fav.plot(figsize=(16, 4), label="Likes", color='g', legend=True)
 time_ret.plot(figsize=(16, 4), label="Retweets", color='b', legend=True)
 pylab.ylabel("Count")
-pylab.title("Graph Information")
+pylab.title("Graph Information of " + searchTerm)
 pylab.show()
 
+
+# Start with sentiment analysis
+
+# Clean tweet before analyzing
+def clean_tweet(tweet):
+    return ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ", tweet).split())
+
+# Analyze into positive, negative or neutral
+def analize_sentiment(tweet):
+
+    analysis = TextBlob(clean_tweet(tweet))
+    if analysis.sentiment.polarity > 0:
+        return 1
+    elif analysis.sentiment.polarity == 0:
+        return 0
+    else:
+        return -1
+
+
+data['SA'] = np.array([analize_sentiment(tweet) for tweet in data['Tweets']])
+
+# We display the updated data frame with the new column:
+
+display(data.head(10))
+
+
+pos_tweets = [tweet for index, tweet in enumerate(data['Tweets']) if data['SA'][index] > 0]
+neu_tweets = [tweet for index, tweet in enumerate(data['Tweets']) if data['SA'][index] == 0]
+neg_tweets = [tweet for index, tweet in enumerate(data['Tweets']) if data['SA'][index] < 0]
+
+print("Percentage of positive tweets: {}%".format(len(pos_tweets)*100/len(data['Tweets'])))
+print("Percentage of neutral tweets: {}%".format(len(neu_tweets)*100/len(data['Tweets'])))
+print("Percentage de negative tweets: {}%".format(len(neg_tweets)*100/len(data['Tweets'])))
+
+sentiments = []
+for sentiment in data['SA']:
+    if sentiment not in sentiments:
+        sentiments.append(sentiment)
+
+# We print sources list:
+print("Sentiment:")
+for sentiment in sentiments:
+    print("* {}".format(sentiment))
+
+percent = np.zeros(len(sentiments))
+
+for sentiment in data['SA']:
+    for index in range(len(sentiments)):
+        if sentiment == sentiments[index]:
+            percent[index] += 1
+            pass
+
+percent /= 100
+
+pie_chart = pd.Series(percent, index=sentiments, name='SA')
+pie_chart.plot.pie(fontsize=11, autopct='%.2f', figsize=(6, 6), legend=True)
+pylab.title("Sentiment Analysis of " + searchTerm)
+pylab.show()
